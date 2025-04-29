@@ -1,51 +1,61 @@
 import os
 from twilio.rest import Client
 from dotenv import load_dotenv
-import requests
-from elevenlabs_voice import generate_mp3
+from flask import Flask, request, Response
 
 # Load environment variables
 load_dotenv()
 
-# Grab Twilio credentials
+# Twilio setup
 account_sid = os.getenv('TWILIO_ACCOUNT_SID')
 auth_token = os.getenv('TWILIO_AUTH_TOKEN')
 twilio_number = os.getenv('TWILIO_PHONE_NUMBER')
-
-# Initialize Twilio client
 client = Client(account_sid, auth_token)
 
-def upload_file(file_path):
-    with open(file_path, "rb") as f:
-        response = requests.put(f'https://transfer.sh/{os.path.basename(file_path)}', data=f)
-        if response.status_code == 200:
-            file_url = response.text.strip()
-            print(f"Uploaded MP3 at {file_url}")
-            return file_url
-        else:
-            raise Exception(f"Upload failed: {response.status_code} - {response.text}")
+# Flask app setup
+app = Flask(__name__)
+
+# Your uploaded human voice MP3
+mp3_url = "https://limewire.com/d/8MdA4#x4RWDku9Iv"
+
+# Your public ngrok URL (with /voice at the end)
+public_ngrok_url = "https://184f-2600-6c5d-f0-a620-b824-60f4-5646-b6a2.ngrok-free.app/voice"
 
 def make_call(to_number):
-    # Step 1: Generate the mp3 file with real human voice
-    text = (
-        "Hey there! This is Mike from XYZ Blinds. "
-        "I'm reaching out to offer you a special fifty dollar discount on professional blind installation. "
-        "If you're interested, press 1 on your keypad now, and we'll get you all set up!"
-    )
-    mp3_file = generate_mp3(text)
-
-    # Step 2: Upload the mp3 file
-    file_url = upload_file(mp3_file)
-
-    # Step 3: Make the call using the uploaded MP3
     call = client.calls.create(
         to=to_number,
         from_=twilio_number,
-        twiml=f'''
-<Response>
-  <Play>{file_url}</Play>
-  <Gather numDigits="1" timeout="6" action="https://webhook.site/your-fake-endpoint" method="POST" />
-</Response>
-'''
+        url=public_ngrok_url
     )
     print(f"Call initiated: {call.sid}")
+
+@app.route("/voice", methods=["POST"])
+def voice():
+    from twilio.twiml.voice_response import VoiceResponse, Gather
+
+    response = VoiceResponse()
+    gather = Gather(num_digits=1, action="/gather", method="POST", timeout=6)
+    gather.play(mp3_url)
+    response.append(gather)
+    return Response(str(response), mimetype="application/xml")
+
+@app.route("/gather", methods=["POST"])
+def gather():
+    from twilio.twiml.voice_response import VoiceResponse
+
+    digits = request.form.get("Digits")
+    from_number = request.form.get("From")
+    response = VoiceResponse()
+
+    if digits == "1":
+        save_lead(from_number)
+        response.say("Thank you! We've recorded your interest. Someone will contact you soon.")
+    else:
+        response.say("No problem. Thanks for your time!")
+    
+    return Response(str(response), mimetype="application/xml")
+
+def save_lead(phone_number):
+    with open("leads.txt", "a") as f:
+        f.write(f"{phone_number}\n")
+    print(f"Saved lead: {phone_number}")
