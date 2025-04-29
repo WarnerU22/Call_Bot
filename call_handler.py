@@ -15,11 +15,11 @@ client = Client(account_sid, auth_token)
 # Flask app setup
 app = Flask(__name__)
 
-# Your uploaded human voice MP3
-mp3_url = "https://limewire.com/d/8MdA4#x4RWDku9Iv"
+# ✅ Set your direct MP3 URL here (this will be the real voice message)
+mp3_url = "https://your-direct-mp3-link.com/output.mp3"
 
-# Your public ngrok URL (with /voice at the end)
-public_ngrok_url = "https://184f-2600-6c5d-f0-a620-b824-60f4-5646-b6a2.ngrok-free.app/voice"
+# ✅ Set your ngrok public URL here (with /voice at end)
+public_ngrok_url = "https://your-ngrok-id.ngrok-free.app/voice"
 
 def make_call(to_number):
     call = client.calls.create(
@@ -49,10 +49,10 @@ def gather():
 
     if digits == "1":
         save_lead(from_number)
-        response.say("Thank you! We've recorded your interest. Someone will contact you soon.")
+        response.say("Thank you! We've recorded your interest. We'll contact you soon.")
     else:
-        response.say("No problem. Thanks for your time!")
-    
+        response.say("No problem. Thank you for your time.")
+
     return Response(str(response), mimetype="application/xml")
 
 def save_lead(phone_number):
