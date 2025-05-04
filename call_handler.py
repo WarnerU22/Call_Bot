@@ -25,13 +25,28 @@ def voice():
 @app.route("/gather", methods=["POST"])
 def gather():
     digits = request.form.get("Digits")
-    from_number = request.form.get("From")  # This is where we capture the caller's phone number
+    
+    # Log all incoming request data for debugging
+    print("Request data:", request.form)
+    
+    # The number the customer called (this should be the actual number calling your Twilio number)
+    called_number = request.form.get("Called")  # This should now be the correct number
     response = VoiceResponse()
 
+    # Log the called number to verify it is the correct customer number
+    print(f"Received call from customer number: {called_number}")
+
     if digits == "1":
-        with open("leads.txt", "a") as f:
-            f.write(f"{from_number}\n")  # Save the correct phone number to leads.txt
-        response.say("Thanks! We’ll reach out to you shortly.")
+        # Check if 'called_number' is correctly received
+        if called_number:
+            # Write the customer's number to leads.txt
+            with open("leads.txt", "a") as f:
+                f.write(f"{called_number}\n")  # Save the correct phone number to leads.txt
+            print(f"Customer's phone number {called_number} saved to leads.txt.")  # Confirmation in the terminal
+            response.say("Thanks! We’ll reach out to you shortly.")
+        else:
+            print("Error: 'called_number' is empty.")  # This will help us debug if something's wrong
+            response.say("Sorry, we could not capture your phone number.")
     else:
         response.say("No problem. Thank you for your time.")
     
