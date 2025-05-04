@@ -1,11 +1,21 @@
-from call_handler import app, make_call
+import os
+from twilio.rest import Client
+from dotenv import load_dotenv
 
-if __name__ == "__main__":
-    try:
-        print("📞 Attempting to make call...")
-        make_call("+19313345875")  # Replace with your number
-        print("✅ Call triggered successfully.")
-    except Exception as e:
-        print(f"❌ Error while making call: {e}")
+load_dotenv()
 
-    app.run(host="0.0.0.0", port=5000)
+client = Client(
+    os.getenv("TWILIO_ACCOUNT_SID"),
+    os.getenv("TWILIO_AUTH_TOKEN")
+)
+
+def make_call(to_number):
+    call = client.calls.create(
+        to=to_number,
+        from_=os.getenv("TWILIO_PHONE_NUMBER"),
+        url=f"{os.getenv('NGROK_PUBLIC_URL')}/voice"
+    )
+    print(f"📞 Call started: {call.sid}")
+
+# Example usage
+make_call("+19313345875")
